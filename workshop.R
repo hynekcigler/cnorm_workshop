@@ -40,22 +40,23 @@ head(dat)
 describe(dat)
 
 
-## oříznema data jen na juniorský vzorek
+## ořízne data jen na juniorský vzorek
 
 dat <- dat[dat$vek_roky < 40, ]
 
 
 # T01: Grafomotorické tempo -----------------------------------------------
 
-## Kontrola standardních skórů
+## Kontrola existujících standardních skórů
 hist(dat$T01_IQ, breaks = 20)
 qqnorm(dat$T01_IQ); qqline(dat$T01_IQ)
 pirateplot(T01_IQ ~ vek_kategorie, dat)
 
-## Deskriptivy
+## Deskriptivy hrubého skóru
 hist(dat$T01_M)
 pirateplot(T01_M ~ vek_kategorie, dat)
 plot(dat$vek_roky, dat$T01_M)
+qqnorm(dat$T01_M); qqline(dat$T01_M) ## docela dobré! :)
 
 
 
@@ -65,7 +66,7 @@ dat2 <- dat[!is.na(dat$T01_M), ]
 
 
 
-# Klasické normy ----------------------------------------------------------
+# Klasické diskrétní normy ----------------------------------------------------------
 
 vek_zaokrouhleny <- floor(dat2$vek_roky)
 veky <- sort(unique(vek_zaokrouhleny))
@@ -76,20 +77,46 @@ for (i in 2:17) {
   normy_diskretni <- rbind(normy_diskretni, 
                            c(vek = veky[i],
                              M = mean(dat2$T01_M[vek_zaokrouhleny == veky[i]]),
-                             SD = sd(dat2$T01_M[vek_zaokrouhleny == veky[i]])))
+                             SD = sd(dat2$T01_M[vek_zaokrouhleny == veky[i]]), 
+                             N = sum(vek_zaokrouhleny == veky[i])))
 }
 normy_diskretni <- data.frame(normy_diskretni)
 rownames(normy_diskretni) <- normy_diskretni$vek
-
+normy_diskretni
 
 plot(dat2$vek_roky, dat2$T01_M, 
      xlab = "věk", ylab = "skóre", 
-     main = "Klasické normy", col = "gray")
+     main = "Klasické diskrétní normy\nlineární transformace", col = "gray")
 lines(normy_diskretni$vek, normy_diskretni$M, lwd = 3, type = "s")
 lines(normy_diskretni$vek, normy_diskretni$M-normy_diskretni$SD, lwd = 1, 
       lty=2, type = "s")
 lines(normy_diskretni$vek, normy_diskretni$M+normy_diskretni$SD, lwd = 1, 
       lty=2, type = "s")
+legend("bottomright", c("M", "± 1 SD"), lwd = c(3,1), lty = c(1,2), inset = .02)
+
+
+## Vyhlazení parametrů: Inferenční normy ---------------------------------------
+
+## Vyhlazení průměru
+Mloess <- loess(M ~ vek, normy_diskretni, weights = N, span = 1.2)
+normy_diskretni$Mloess <- predict(Mloess, normy_diskretni$vek)
+lines(Mloess)
+lines(normy_diskretni$vek, normy_diskretni$Mloess, type = "s", col = "red", lwd = 2)
+
+## vyhlazení SD
+SDloess <- loess(SD ~ vek, normy_diskretni, weights = N, span = 1.2)
+normy_diskretni$SDloess <- predict(SDloess, normy_diskretni$vek)
+lines(normy_diskretni$vek, normy_diskretni$Mloess+normy_diskretni$SDloess, 
+      type = "s", col = "red", lwd = 2, lty = 2)
+lines(normy_diskretni$vek, normy_diskretni$Mloess-normy_diskretni$SDloess, 
+      type = "s", col = "red", lwd = 2, lty = 2)
+
+legend("bottomright", c("M", "± 1 SD", "vyhlazený M", "vyhlazená SD", "kvantilová reg."), 
+       lwd = c(3,1,3,2,3), lty = c(1,2,1,2,1), inset = .02, 
+       col = c("black", "black", "red", "red", Pal()[1]))
+
+
+normy_diskretni
 
 # Regresní normy ----------------------------------------------------------
 
@@ -142,13 +169,12 @@ summary(m1$model)
 
 print(m1)
 printSubset(m1)
-plotCnorm()
 plot(m1, 1)
 plot(m1, 2)
 plot(m1, 3)
 plot(m1, 4)
 plot(m1, 5)
-plotCnorm(m1, 6)
+# plot(m1, 6) ## pozor, dlouhé
 plotPercentiles(m1, percentiles = c(.001, .01, 0.025, 0.1, 0.25, 0.5, 0.75, .9, .975, .99, .999))
 
 x <- plotPercentileSeries(m1,
@@ -210,7 +236,7 @@ hist(m2_IQ)
 ICC(cbind(dat$T01_IQ, m2_IQ))
 cor.test(dat$T01_IQ, m2_IQ)
 plot(dat$T01_IQ, m2_IQ, 
-     xlab = "originální BACH", ylab = "workshop")
+     xlab = "originální BACH", ylab = "workshop"); abline(0,1, col = "red", lwd = 3)
 ## Rozdíl je zčásti způsoben odstraněním seniorů, kteří výpočty komplikují
 
 
@@ -266,7 +292,15 @@ lines(normy_diskretni$vek-.5, normy_diskretni$M-normy_diskretni$SD, lwd = 1, lty
 lines(normy_diskretni$vek-.5, normy_diskretni$M+normy_diskretni$SD, lwd = 1, lty=2,
       type = "s", col = piratepal("basel")[4])
 
-legend("bottomright", c("cNORM", "LM", "GAMLSS", "diskrétní"), 
+## vyhlazené normy
+lines(normy_diskretni$vek-.5, normy_diskretni$Mloess, lwd = 3, 
+      type = "s", col = piratepal("basel")[5])
+lines(normy_diskretni$vek-.5, normy_diskretni$Mloess-normy_diskretni$SDloess, lwd = 1, lty=2, 
+      type = "s", col = piratepal("basel")[5])
+lines(normy_diskretni$vek-.5, normy_diskretni$Mloess+normy_diskretni$SDloess, lwd = 1, lty=2,
+      type = "s", col = piratepal("basel")[5])
+
+legend("bottomright", c("cNORM", "LM", "GAMLSS", "diskrétní", "inferenční"), 
        col = piratepal("basel"), lwd = 3, inset = .01, cex = .8)
 
 
@@ -292,7 +326,8 @@ cNORM::compare(m2, m3)
 
 
 
-### Dokreslení do předchozího grafu -----------------------------------------
+### Dokreslení do grafu nahoře -----------------------------------------
+## bylo by potřeba jej znovu spustit
 
 getNormCurveShash <- function(norm, model, minAge, maxAge, step = 0.1) {
   age <- seq(minAge, maxAge, by = step)

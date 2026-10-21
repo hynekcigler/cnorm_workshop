@@ -50,6 +50,7 @@ SE_comb <- function(s=1, q=0, n, r, round. = NULL) {
 }
 
 
+## Chyba parametrů
 plot(n, SE_M, type = "l", 
      lwd = 3, col = piratepal("basel")[1], 
      xlim = c(0, max(n)), ylim = c(0, max(SE_M)), 
@@ -60,6 +61,24 @@ lines(n, SE_SD,
 abline(v=seq(50,1000, by = 50), col = "gray")
 legend("topright", 
        c("M", "SD"), lwd = 3, col = piratepal("basel"), inset = .02)
+
+
+## Dopad na skóre
+plot(n, SE_M, type = "l", 
+     lwd = 3, col = piratepal("basel")[1], 
+     xlim = c(0, max(n)), ylim = c(0,  max(SE_q(q = 3, n = n))), 
+     xlab = "Velikost vzorku (min = 25)", 
+     ylab = "Velikost chyby")
+lines(n, SE_SD, 
+      lwd = 3, col = piratepal("basel")[2])
+lines(n, SE_q(q = 1, n = n), col = piratepal("basel")[3], lwd = 3, lty = 2)
+lines(n, SE_q(q = 2, n = n), col = piratepal("basel")[4], lwd = 3, lty = 2)
+lines(n, SE_q(q = 3, n = n), col = piratepal("basel")[5], lwd = 3, lty = 2)
+abline(v=seq(50,1000, by = 50), col = "gray")
+legend("topright", 
+       c("M", "SD", "z = 1", "z = 2", "z = 3"), lwd = 3, 
+       lty = c(1,1,2,2,2), 
+       col = piratepal("basel"), inset = .02)
 
 
 SE_q(q = 0, n = 50, round. = 2)
@@ -104,6 +123,33 @@ result2
 
 write.table(result,file = "clipboard", sep="\t", dec=",")
 write.table(result2,file = "clipboard", sep="\t", dec=",")
+
+
+windows(10,6)
+plot(NA, xlim = c(0,1000), ylim = c(0,.75), 
+     las = 1, 
+     xlab = "Velikost vzorku (min = 25)", 
+     ylab = "Kombinovaná chyba měření a norem (SD = 1)")
+i <- 1
+for (r in c(.7, .8, .9)) {
+  j <- 1
+  for (q in 0:3) {
+    lines(n, SE_comb(q = q, n = n, r = r), 
+          lwd = 3, lty = i, col = piratepal("basel")[j])
+    j <- j + 1
+  }
+  i <- i + 1
+}
+abline(h = SE(r = c(.7, .8, .9)), lty = 1:3, col = "black")
+legend("bottom", c(paste0("r = .7, ", paste0("z = ", 0:3)), 
+                   paste0("r = .8, ", paste0("z = ", 0:3)), 
+                   paste0("r = .9, ", paste0("z = ", 0:3))), 
+       ncol = 3, lwd = 3, cex = .8, inset = .02, 
+       lty = rep(1:3, each = 4), 
+       col = piratepal("basel")[1:4])
+
+
+
 
 # Výběrová chyba percentilu -----------------------------------------------
 
