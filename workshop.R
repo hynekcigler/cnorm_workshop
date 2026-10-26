@@ -155,7 +155,7 @@ lines(roky, gamlss_predict$mu + gamlss_predict$sigma, lwd = 1, lty = 2)
 
 # cNORM: Kontinuální normy -------------------------------------------------------
 
-group <- cNORM::getGroups(dat2$vek_roky, 8)
+(group <- cNORM::getGroups(dat2$vek_roky, 8))
 table(group)
 
 
@@ -178,7 +178,7 @@ plot(m1, 5)
 plotPercentiles(m1, percentiles = c(.001, .01, 0.025, 0.1, 0.25, 0.5, 0.75, .9, .975, .99, .999))
 
 x <- plotPercentileSeries(m1,
-                          end = 12,
+                          end = 7,
                           percentiles = c(.001, .01, 0.025, 0.1, 0.25, 0.5, 0.75, .9, .975, .99, .999))
 pdf("T01_percentily.pdf")
 x
@@ -194,13 +194,13 @@ cnorm.cv(m1$data, max = 7, repetitions = 10, pCutoff = .05)
 
 ## Model se čtyřmi parametry!
 m2 <- cnorm(raw = dat2$T01_M, group = group, scale = "IQ", 
-            k = 3, t = 4, 
+            k = 4, t = 4, 
             terms = 4)
 
 cNORM::compare(m1, m2)
 
 plotPercentiles(m2, percentiles = c(.001, .01, 0.025, 0.1, 0.25, 0.5, 0.75, .9, .975, .99, .999))
-
+plotDerivative(m2)
 
 
 plotRaw(m2)
@@ -242,7 +242,7 @@ plot(dat$T01_IQ, m2_IQ,
 
 ## Export normativní tabulky s přesností na měsíc
 
-T01_norm <- normTable(A = seq(5, 23, by=1/12), model = m2,
+T01_norm <- normTable(A = seq(5, 23, by=1/12), model = m2, ## To 1/12 nastavuje přesnost norem na jeden měsíc.
                       minNorm = 60, maxNorm = 140, 
                       step = .1, pretty = F, monotonuous = T)
 
